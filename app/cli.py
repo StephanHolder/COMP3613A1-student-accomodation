@@ -14,7 +14,10 @@ From the project root (venv active, deps installed; ``.env`` optional — falls 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 
@@ -51,11 +54,18 @@ def cmd_seed(args: argparse.Namespace) -> None:
 
     bob / bobpass       (regular_user)
     admin / adminpass   (admin)
-    landlord / landlordpass (landlord, with --with-landlord)
+    fred / fredpass      (regular_user)
+    landlord / landlordpass (landlord)
     """
     from app.database import ensure_db_and_tables, get_cli_session
+    from app.models.application import Application
+    from app.models.booking import Booking
+    from app.models.listing import Listing
+    from app.models.review import Review
+    from app.models.user import User
     from app.repositories.user import UserRepository
     from app.schemas.user import AdminCreate, LandlordCreate, RegularUserCreate
+    from sqlmodel import select
     from app.utilities.security import encrypt_password
 
     _ensure_models_loaded()
@@ -64,11 +74,9 @@ def cmd_seed(args: argparse.Namespace) -> None:
     demo_users = [
         ("bob", "bob@example.com", "bobpass", "regular_user"),
         ("admin", "admin@example.com", "adminpass", "admin"),
+        ("fred", "fred@example.com", "fredpass", "regular_user"),
+        ("landlord", "landlord@example.com", "landlordpass", "landlord"),
     ]
-    if getattr(args, "with_landlord", False):
-        demo_users.append(
-            ("landlord", "landlord@example.com", "landlordpass", "landlord")
-        )
 
     created = 0
     skipped = 0
@@ -95,9 +103,139 @@ def cmd_seed(args: argparse.Namespace) -> None:
             created += 1
 
     print(f"Seed done — created {created}, skipped {skipped}.")
-    print("Login with bob/bobpass or admin/adminpass")
-    if getattr(args, "with_landlord", False):
-        print("Landlord demo login: landlord / landlordpass")
+    print("Login with bob/bobpass, fred/fredpass, admin/adminpass, or landlord/landlordpass")
+
+    with get_cli_session() as session:
+        users = {
+            username: session.exec(
+                select(User).where(User.username == username)
+            ).one()
+            for username in ("bob", "fred", "landlord")
+        }
+        upload_names = [
+            "sieuwert-otterloo-aren8nutd1Q-unsplash.jpg",
+            "scott-webb-1ddol8rgUH8-unsplash.jpg",
+            "pixasquare-4ojhpgKpS68-unsplash.jpg",
+            "frames-for-your-heart-mR1CIDduGLc-unsplash.jpg",
+            "b2f14e9fdc9c4eed82f937084bfefccd.jpg",
+        ]
+        listing_specs = [
+            ("14 Campus Avenue", Decimal("950.00"), "Private room", "Wi-Fi, Laundry", "Verified"),
+            ("28 Palm Grove", Decimal("1100.00"), "Studio", "Wi-Fi, Parking", "Verified"),
+            ("6 Garden Street", Decimal("875.00"), "Shared room", "Laundry, Kitchen", "Verified"),
+            ("42 College Road", Decimal("1250.00"), "One-bedroom", "Wi-Fi, Air conditioning", "Verified"),
+            ("9 Seaside Lane", Decimal("780.00"), "Loft", "Kitchen, Parking", "Pending"),
+            ("31 Market Street", Decimal("1025.00"), "Two-bedroom", "Wi-Fi, Laundry", "Verified"),
+        ]
+        listings: dict[str, Listing] = {}
+        for index, (address, price, room_type, amenities, status) in enumerate(
+            listing_specs
+        ):
+            listing = session.exec(
+                select(Listing).where(Listing.address == address)
+            ).one_or_none()
+            if listing is None:
+                listing = Listing(
+                    address=address,
+                    price=price,
+                    security_fee=price,
+                    room_type=room_type,
+                    amenities=amenities,
+                    photos=json.dumps([upload_names[index % len(upload_names)]]),
+                    verification_status=status,
+                    availability=True,
+                    landlord_id=users["landlord"].id,
+                )
+                session.add(listing)
+                session.commit()
+                session.refresh(listing)
+                print(f"  create listing {address} ({status})")
+            listings[address] = listing
+
+        completed_listing = listings["31 Market Street"]
+        completed_listing.availability = True
+        completed_listing.verification_status = "Verified"
+        session.add(completed_listing)
+        session.commit()
+        session.refresh(completed_listing)
+
+        for username, start_date, move_out_date, rating, comment in (
+            (
+                "bob",
+                date(2025, 1, 10),
+                date(2025, 6, 30),
+                5,
+                "Bright room, convenient location, and a smooth stay.",
+            ),
+            (
+                "fred",
+                date(2025, 2, 1),
+                date(2025, 7, 31),
+                4,
+                "Good value and helpful landlord.",
+            ),
+        ):
+            student = users[username]
+            application = session.exec(
+                select(Application).where(
+                    Application.listing_id == completed_listing.id,
+                    Application.student_id == student.id,
+                    Application.preferred_start_date == start_date,
+                )
+            ).one_or_none()
+            if application is None:
+                application = Application(
+                    preferred_start_date=start_date,
+                    status="Completed",
+                    listing_id=completed_listing.id,
+                    student_id=student.id,
+                )
+                session.add(application)
+                session.commit()
+                session.refresh(application)
+
+            booking = session.exec(
+                select(Booking).where(Booking.application_id == application.id)
+            ).one_or_none()
+            if booking is None:
+                booking = Booking(
+                    application_id=application.id,
+                    start_date=start_date,
+                    move_out_date=move_out_date,
+                    student_id=student.id,
+                    listing_id=completed_listing.id,
+                    status="Completed",
+                )
+                session.add(booking)
+                session.commit()
+                session.refresh(booking)
+            else:
+                booking.status = "Completed"
+                booking.move_out_date = move_out_date
+                session.add(booking)
+                session.commit()
+                session.refresh(booking)
+
+            review = session.exec(
+                select(Review).where(Review.booking_id == booking.id)
+            ).one_or_none()
+            if review is None:
+                session.add(
+                    Review(
+                        booking_id=booking.id,
+                        student_id=student.id,
+                        listing_id=completed_listing.id,
+                        rating=rating,
+                        comment=comment,
+                        review_date=move_out_date,
+                    )
+                )
+                session.commit()
+                print(f"  create review for {username} on {completed_listing.address}")
+
+        completed_listing.availability = True
+        session.add(completed_listing)
+        session.commit()
 
 
 def cmd_run(args: argparse.Namespace) -> None:

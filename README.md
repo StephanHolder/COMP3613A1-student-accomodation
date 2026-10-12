@@ -84,19 +84,17 @@ Defaults use a local SQLite file (`database.db`). Change `SECRET_KEY` before any
 
 ### 4. Initialise the database (Python CLI)
 
-Creates tables (drops existing by default) **and seeds demo users**:
+Creates tables (drops existing by default) and seeds demo users plus the
+Student Accommodation demo listings, completed stays, and reviews:
 
 ```bash
 python manage.py init
 ```
 
-To include the listing-workflow landlord demo account:
-
-```bash
-python manage.py init --with-landlord
-```
-
-This adds `landlord` / `landlordpass`; the default student and admin demo accounts are unchanged.
+The default seed includes `landlord` / `landlordpass` and `fred` / `fredpass`
+alongside the existing student and admin accounts. It is idempotent, so
+`python manage.py init --no-drop` can run on every boot without creating
+duplicate demo rows.
 
 | Username | Password    | Role         |
 |----------|-------------|--------------|
@@ -108,10 +106,11 @@ Flags:
 ```bash
 python manage.py init --no-drop   # create/seed without dropping
 python manage.py init --no-seed   # tables only (skip demo users)
-python manage.py seed --with-landlord  # seed demo accounts plus landlord
+python manage.py seed                  # seed demo accounts and accommodation data
 ```
 
-Seeding skips usernames that already exist. Add more rows in `cmd_seed` in `app/cli.py`. `python manage.py seed` still works if you only want to (re)insert demo users.
+Seeding skips usernames and demo listings that already exist. Add more rows in
+`cmd_seed` in `app/cli.py`. `python manage.py seed` is safe to run repeatedly.
 
 ```bash
 python manage.py users
