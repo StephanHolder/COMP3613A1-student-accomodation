@@ -1,0 +1,81 @@
+{
+  "system": "Student Accommodation",
+  "actors": [
+    {"name": "Student", "side": "left"},
+    {"name": "Landlord", "side": "right"},
+    {"name": "Admin", "side": "right"}
+  ],
+  "use_cases": [
+    {
+      "name": "Post listing details",
+      "actors": ["Landlord"]
+    },
+    {
+      "name": "View Current Listings",
+      "actors": ["Landlord"]
+    },
+    {
+      "name": "Edit listing details",
+      "actors": ["Landlord"]
+    },
+    {
+      "name": "Verify listing",
+      "actors": ["Admin"],
+      "includes": ["View listing details"]
+    },
+    {
+      "name": "Browse/search listings",
+      "actors": ["Student"]
+    },
+    {
+      "name": "View listing details",
+      "actors": ["Student", "Landlord", "Admin"],
+      "extends": ["Browse/search listings"]
+    },
+    {
+      "name": "Apply to listed accommodation",
+      "actors": ["Student"],
+      "includes": ["View listing details"]
+    },
+    {
+      "name": "Request student details",
+      "actors": ["Landlord"]
+    },
+    {
+      "name": "Submit Requested Details",
+      "actors": ["Student"]
+    },
+    {
+      "name": "Accept application",
+      "actors": ["Landlord"]
+    },
+    {
+      "name": "Decline application",
+      "actors": ["Landlord"]
+    },
+    {
+      "name": "Pay Security and first month (simulated)",
+      "actors": ["Student"]
+    },
+    {
+      "name": "Mark stay as completed",
+      "actors": ["Landlord"]
+    },
+    {
+      "name": "Give move-out notice",
+      "actors": ["Student"]
+    },
+    {
+      "name": "View Application or Booking Status",
+      "actors": ["Student", "Landlord"]
+    },
+    {
+      "name": "Submit review of completed stay",
+      "actors": ["Student"]
+    },
+    {
+      "name": "View Reviews",
+      "actors": ["Student", "Landlord"]
+    }
+  ]
+}

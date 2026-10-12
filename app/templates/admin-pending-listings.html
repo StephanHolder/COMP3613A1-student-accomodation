@@ -1,0 +1,95 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Pending listings{% endblock %}
+
+{% block subpage_content %}
+<div class="container-fluid py-2">
+  <section class="workspace-welcome admin-pending-page">
+    <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-3 mb-4">
+      <div>
+        <p class="landing-kicker">Listing review</p>
+        <h1 class="h2 mb-2">Pending listings: {{ pagination.total_count }}</h1>
+      </div>
+      <form method="get" action="{{ url_for('admin_pending_listings_view') }}" class="admin-listing-order">
+        <label class="form-label mb-1" for="order">Order</label>
+        <select class="form-select" id="order" name="order" onchange="this.form.submit()">
+          <option value="newest" {{ "selected" if order == "newest" else "" }}>Newest first</option>
+          <option value="oldest" {{ "selected" if order == "oldest" else "" }}>Oldest first</option>
+        </select>
+      </form>
+    </div>
+
+    {% if listings %}
+    <div class="admin-pending-list">
+      {% for listing in listings %}
+      <article class="admin-pending-card">
+        <div class="admin-pending-card-heading">
+          <div>
+            <p class="text-muted mb-1">
+              Landlord login: {{ landlord_usernames.get(listing.landlord_id, "Account unavailable") }}
+              <span class="ms-1">(ID {{ listing.landlord_id }})</span>
+            </p>
+            <h2 class="h5 mb-0">{{ listing.address }}</h2>
+          </div>
+          <span class="listing-status listing-status-pending">Pending</span>
+        </div>
+
+        {% set photos = photos_by_listing.get(listing.id, []) %}
+        {% if photos %}
+        <div class="admin-pending-photos">
+          {% for photo in photos %}
+          <img src="{{ url_for('static', path='uploads/' + photo) }}" alt="Listing photo">
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <dl class="admin-pending-facts">
+          <div><dt>Price</dt><dd>${{ "%.2f"|format(listing.price) }}</dd></div>
+          <div><dt>Security fee</dt><dd>${{ "%.2f"|format(listing.security_fee) }}</dd></div>
+          <div><dt>Room type</dt><dd>{{ listing.room_type }}</dd></div>
+          <div><dt>Amenities</dt><dd>{{ listing.amenities }}</dd></div>
+        </dl>
+
+        <div class="admin-pending-actions">
+          <form method="post" action="{{ url_for('submit_listing_decision', listing_id=listing.id) }}">
+            <input type="hidden" name="decision" value="approve">
+            <button class="btn btn-primary" type="submit">Approve</button>
+          </form>
+          <form method="post" action="{{ url_for('submit_listing_decision', listing_id=listing.id) }}" class="admin-reject-form">
+            <input type="hidden" name="decision" value="reject">
+            <div>
+              <label class="form-label" for="rejection-reason-{{ listing.id }}">Reason for rejection</label>
+              <textarea class="form-control" id="rejection-reason-{{ listing.id }}" name="rejection_reason" rows="2" required></textarea>
+            </div>
+            <button class="btn btn-outline-danger" type="submit">Reject</button>
+          </form>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    {% if pagination.total_pages > 1 %}
+    <nav class="listing-pagination" aria-label="Pending listings pages">
+      <ul class="pagination align-items-center mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+          {% if pagination.has_prev %}
+          <a class="page-link" href="{{ url_for('admin_pending_listings_view') }}?page={{ pagination.prev_num }}&amp;order={{ order }}">← Previous</a>
+          {% else %}<span class="page-link" aria-disabled="true">← Previous</span>{% endif %}
+        </li>
+        <li class="page-item page-label"><span>Page {{ pagination.page }} of {{ pagination.total_pages }}</span></li>
+        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+          {% if pagination.has_next %}
+          <a class="page-link" href="{{ url_for('admin_pending_listings_view') }}?page={{ pagination.next_num }}&amp;order={{ order }}">Next →</a>
+          {% else %}<span class="page-link" aria-disabled="true">Next →</span>{% endif %}
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="listing-empty-state">
+      <h2 class="h5">No pending listings</h2>
+      <p class="mb-0">New landlord submissions will appear here for review.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

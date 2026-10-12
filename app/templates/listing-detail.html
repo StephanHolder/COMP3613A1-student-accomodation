@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ listing.address }}{% endblock %}
+
+{% block content %}
+<main class="student-marketplace">
+  <header class="marketplace-header">
+    <a class="brand-lockup" href="{{ url_for('index_view') }}">
+      <img class="brand-mark" src="{{ url_for('static', path='img/brand-dog-kennel.svg') }}" alt="">
+      <span class="brand-wordmark">Student Accommodation</span>
+    </a>
+    <a href="{{ url_for('search_listings') }}">Back to listings</a>
+  </header>
+
+  <article class="listing-detail-panel">
+    {% for message in get_flashed_messages(request) %}
+    <div class="alert alert-{{ message.type }}" role="alert">{{ message.message }}</div>
+    {% endfor %}
+    <p class="landing-kicker">Verified listing</p>
+    <h1 class="h2">{{ listing.address }}</h1>
+
+    {% if photos %}
+    <div class="listing-photo-gallery" data-listing-gallery>
+      <button class="btn btn-outline-secondary" type="button" data-gallery-prev aria-label="Previous photo">←</button>
+      <img src="{{ url_for('static', path='uploads/' + photos[0]) }}" alt="Accommodation photo" data-gallery-image>
+      <button class="btn btn-outline-secondary" type="button" data-gallery-next aria-label="Next photo">→</button>
+      <span class="gallery-count" data-gallery-count>1 / {{ photos|length }}</span>
+      <div class="gallery-sources" hidden>
+        {% for photo in photos %}
+        <span data-gallery-source="{{ url_for('static', path='uploads/' + photo) }}"></span>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="listing-photo-empty">Photos not provided</div>
+    {% endif %}
+
+    <div class="listing-detail-facts">
+      <p><strong>Room type:</strong> {{ listing.room_type }}</p>
+      <p><strong>Amenities:</strong> {{ listing.amenities }}</p>
+      <p><strong>Price:</strong> ${{ "%.2f"|format(listing.price) }}</p>
+      <p><strong>Security fee:</strong> ${{ "%.2f"|format(listing.security_fee) }}</p>
+      <p><strong>Availability:</strong> {{ "Available" if listing.availability else "Unavailable" }}</p>
+      <p><strong>Average rating:</strong>
+        {% if average_rating is not none %}{{ "%.1f"|format(average_rating) }} / 5{% else %}No reviews yet{% endif %}
+      </p>
+    </div>
+
+    <section class="listing-reviews mt-4" aria-labelledby="reviews-heading">
+      <h2 class="h4" id="reviews-heading">Reviews</h2>
+      {% if reviews %}
+        {% for review, reviewer in reviews %}
+        <article class="border rounded p-3 mb-3">
+          <p class="mb-1"><strong>Reviewer (Login ID):</strong> {{ reviewer.login_id }}</p>
+          <p class="mb-1"><strong>Rating:</strong> {{ review.rating }} / 5</p>
+          <p class="mb-1">{{ review.comment }}</p>
+          <p class="text-muted mb-0"><strong>Date:</strong> {{ review.review_date }}</p>
+        </article>
+        {% endfor %}
+      {% else %}
+      <p class="text-muted">No reviews yet.</p>
+      {% endif %}
+      {% if reviews_pagination.total_pages > 1 %}
+      <nav class="listing-pagination" aria-label="Review pages">
+        <ul class="pagination align-items-center mb-0">
+          <li class="page-item {{ 'disabled' if not reviews_pagination.has_prev }}">
+            {% if reviews_pagination.has_prev %}
+            <a class="page-link" href="{{ url_for('listing_detail_view', listing_id=listing.id) }}?reviews_page={{ reviews_pagination.prev_num }}">← Previous</a>
+            {% else %}
+            <span class="page-link" aria-disabled="true">← Previous</span>
+            {% endif %}
+          </li>
+          <li class="page-item page-label" aria-current="page">
+            <span>Page {{ reviews_pagination.page }} of {{ reviews_pagination.total_pages }}</span>
+          </li>
+          <li class="page-item {{ 'disabled' if not reviews_pagination.has_next }}">
+            {% if reviews_pagination.has_next %}
+            <a class="page-link" href="{{ url_for('listing_detail_view', listing_id=listing.id) }}?reviews_page={{ reviews_pagination.next_num }}">Next →</a>
+            {% else %}
+            <span class="page-link" aria-disabled="true">Next →</span>
+            {% endif %}
+          </li>
+        </ul>
+      </nav>
+      {% endif %}
+    </section>
+
+    {% if listing.availability %}
+      {% if user_logged_in %}
+      <form method="post" action="{{ url_for('submit_application', listing_id=listing.id) }}" class="application-date-form">
+        <label class="form-label" for="preferred_start_date">Preferred start date</label>
+        <input class="form-control" id="preferred_start_date" name="preferred_start_date" type="date" required>
+        <button class="btn btn-primary btn-lg mt-3" type="submit">Apply</button>
+      </form>
+      {% else %}
+      <p class="mb-0"><a class="btn btn-primary" href="{{ url_for('login_view') }}">Sign in to apply</a></p>
+      {% endif %}
+    {% else %}
+    <button class="btn btn-primary btn-lg" type="button" disabled>Apply</button>
+    <p class="form-text mt-2">This listing is currently unavailable.</p>
+    {% endif %}
+  </article>
+</main>
+
+{% if photos|length > 1 %}
+<script>
+  const gallery = document.querySelector("[data-listing-gallery]");
+  const photoUrls = Array.from(gallery.querySelectorAll("[data-gallery-source]"))
+    .map((photo) => photo.dataset.gallerySource);
+  const image = gallery.querySelector("[data-gallery-image]");
+  const count = gallery.querySelector("[data-gallery-count]");
+  let photoIndex = 0;
+  function showPhoto(index) {
+    photoIndex = (index + photoUrls.length) % photoUrls.length;
+    image.src = photoUrls[photoIndex];
+    count.textContent = `${photoIndex + 1} / ${photoUrls.length}`;
+  }
+  gallery.querySelector("[data-gallery-prev]").addEventListener("click", () => showPhoto(photoIndex - 1));
+  gallery.querySelector("[data-gallery-next]").addEventListener("click", () => showPhoto(photoIndex + 1));
+</script>
+{% endif %}
+{% endblock %}

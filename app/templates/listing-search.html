@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Find accommodation{% endblock %}
+
+{% block content %}
+<main class="student-marketplace">
+  <header class="marketplace-header">
+    <a class="brand-lockup" href="{{ url_for('index_view') }}">
+      <img class="brand-mark" src="{{ url_for('static', path='img/brand-dog-kennel.svg') }}" alt="">
+      <span class="brand-wordmark">Student Accommodation</span>
+    </a>
+    {% if user_logged_in %}
+    <a href="{{ url_for('user_home_view') }}">My account</a>
+    {% else %}
+    <a href="{{ url_for('login_view') }}">Sign in</a>
+    {% endif %}
+  </header>
+
+  <div class="marketplace-layout">
+    <aside class="search-filters">
+      <h1 class="h3">Search</h1>
+      <form method="get" action="{{ url_for('search_listings') }}">
+        <div class="mb-3">
+          <label class="form-label" for="address">Location</label>
+          <input class="form-control" id="address" name="address" value="{{ filters.address }}" placeholder="Address or area">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="min_price">Price range</label>
+          <div class="d-flex gap-2">
+            <input class="form-control" id="min_price" name="min_price" type="number" min="0" step="0.01" value="{{ filters.min_price }}" placeholder="Min">
+            <input class="form-control" name="max_price" type="number" min="0" step="0.01" value="{{ filters.max_price }}" placeholder="Max">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="room_type">Room type</label>
+          <select class="form-select" id="room_type" name="room_type">
+            <option value="">All room types</option>
+            {% for room_type in room_types %}
+            <option value="{{ room_type }}" {{ "selected" if filters.room_type == room_type else "" }}>{{ room_type }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <fieldset class="mb-3">
+          <legend class="form-label">Amenities</legend>
+          {% for amenity in ["washing machine", "dryer", "vending machine"] %}
+          <label class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="amenities" value="{{ amenity }}"
+                   {{ "checked" if amenity in filters.amenities else "" }}>
+            <span class="form-check-label">{{ amenity|title }}</span>
+          </label>
+          {% endfor %}
+        </fieldset>
+        <button class="btn btn-primary w-100" type="submit">Search</button>
+      </form>
+    </aside>
+
+    <section class="search-results" aria-labelledby="results-title">
+      {% for message in get_flashed_messages(request) %}
+      <div class="alert alert-{{ message.type }}" role="alert">{{ message.message }}</div>
+      {% endfor %}
+      <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-3">
+        <h2 class="h3 mb-0" id="results-title">Search results</h2>
+        <p class="text-muted mb-0">Showing {{ listings|length }} of {{ pagination.total_count }} results</p>
+      </div>
+
+      {% if listings %}
+      <div class="listing-card-list">
+        {% for listing in listings %}
+        <article class="listing-card marketplace-listing-card">
+          <div class="listing-card-content">
+            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+              <h3 class="h5">{{ listing.address }}</h3>
+              <span class="listing-status listing-status-verified">Verified</span>
+            </div>
+            <p class="mb-1">{{ listing.room_type }} · {{ listing.amenities }}</p>
+            <p class="text-muted mb-0">${{ "%.2f"|format(listing.price) }} · {{ "Available" if listing.availability else "Unavailable" }}</p>
+          </div>
+          <a class="btn btn-outline-secondary" href="{{ url_for('listing_detail_view', listing_id=listing.id) }}">View listing</a>
+        </article>
+        {% endfor %}
+      </div>
+
+      {% if pagination.total_pages > 1 %}
+      <nav class="listing-pagination" aria-label="Search result pages">
+        <ul class="pagination align-items-center mb-0">
+          <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+            {% if pagination.has_prev %}
+            <form method="get" action="{{ url_for('search_listings') }}">
+              <input type="hidden" name="page" value="{{ pagination.prev_num }}">
+              <input type="hidden" name="address" value="{{ filters.address }}">
+              <input type="hidden" name="room_type" value="{{ filters.room_type }}">
+              <input type="hidden" name="min_price" value="{{ filters.min_price }}">
+              <input type="hidden" name="max_price" value="{{ filters.max_price }}">
+              {% for amenity in filters.amenities %}<input type="hidden" name="amenities" value="{{ amenity }}">{% endfor %}
+              <button class="page-link" type="submit">← Previous</button>
+            </form>
+            {% else %}<span class="page-link" aria-disabled="true">← Previous</span>{% endif %}
+          </li>
+          <li class="page-item page-label"><span>Showing {{ (pagination.page - 1) * pagination.limit + 1 }}–{{ (pagination.page - 1) * pagination.limit + listings|length }} of {{ pagination.total_count }}</span></li>
+          <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+            {% if pagination.has_next %}
+            <form method="get" action="{{ url_for('search_listings') }}">
+              <input type="hidden" name="page" value="{{ pagination.next_num }}">
+              <input type="hidden" name="address" value="{{ filters.address }}">
+              <input type="hidden" name="room_type" value="{{ filters.room_type }}">
+              <input type="hidden" name="min_price" value="{{ filters.min_price }}">
+              <input type="hidden" name="max_price" value="{{ filters.max_price }}">
+              {% for amenity in filters.amenities %}<input type="hidden" name="amenities" value="{{ amenity }}">{% endfor %}
+              <button class="page-link" type="submit">Next →</button>
+            </form>
+            {% else %}<span class="page-link" aria-disabled="true">Next →</span>{% endif %}
+          </li>
+        </ul>
+      </nav>
+      {% endif %}
+      {% else %}
+      <div class="listing-empty-state">
+        <h3 class="h5">No verified listings found</h3>
+        <p class="mb-0">Try adjusting your filters, or check back soon.</p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
+</main>
+{% endblock %}

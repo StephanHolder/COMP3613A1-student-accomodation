@@ -1,0 +1,63 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam actorBorderColor #1B365D
+skinparam actorFontColor #1E232D
+skinparam usecaseBackgroundColor #FFFFFF
+skinparam usecaseBorderColor #1B365D
+skinparam usecaseFontColor #1E232D
+skinparam rectangleBorderColor #1B365D
+skinparam rectangleBackgroundColor #F8FAFC
+skinparam arrowColor #1B365D
+
+actor "Student" as Student
+
+rectangle "Student Accommodation" {
+  usecase "Post listing details" as Post_listing_details
+  usecase "View Current Listings" as View_Current_Listings
+  usecase "Edit listing details" as Edit_listing_details
+  usecase "Verify listing" as Verify_listing
+  usecase "Browse/search listings" as Browse_search_listings
+  usecase "View listing details" as View_listing_details
+  usecase "Apply to listed accommodation" as Apply_to_listed_accommodation
+  usecase "Request student details" as Request_student_details
+  usecase "Submit Requested Details" as Submit_Requested_Details
+  usecase "Accept application" as Accept_application
+  usecase "Decline application" as Decline_application
+  usecase "Pay Security and first month (simulated)" as Pay_Security_and_first_month_simulated
+  usecase "Mark stay as completed" as Mark_stay_as_completed
+  usecase "Give move-out notice" as Give_move_out_notice
+  usecase "View Application or Booking Status" as View_Application_or_Booking_Status
+  usecase "Submit review of completed stay" as Submit_review_of_completed_stay
+  usecase "View Reviews" as View_Reviews
+}
+
+actor "Landlord" as Landlord
+actor "Admin" as Admin
+
+Post_listing_details <-- Landlord
+View_Current_Listings <-- Landlord
+Edit_listing_details <-- Landlord
+Verify_listing <-- Admin
+Verify_listing ..> View_listing_details : <<include>>
+Student --> Browse_search_listings
+Student --> View_listing_details
+View_listing_details <-- Landlord
+View_listing_details <-- Admin
+View_listing_details ..> Browse_search_listings : <<extend>>
+Student --> Apply_to_listed_accommodation
+Apply_to_listed_accommodation ..> View_listing_details : <<include>>
+Request_student_details <-- Landlord
+Student --> Submit_Requested_Details
+Accept_application <-- Landlord
+Decline_application <-- Landlord
+Student --> Pay_Security_and_first_month_simulated
+Mark_stay_as_completed <-- Landlord
+Student --> Give_move_out_notice
+Student --> View_Application_or_Booking_Status
+View_Application_or_Booking_Status <-- Landlord
+Student --> Submit_review_of_completed_stay
+Student --> View_Reviews
+View_Reviews <-- Landlord
+
+@enduml

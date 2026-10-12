@@ -3,7 +3,10 @@
 
 {% block subpage_content %}
 <div class="container-fluid py-2">
-  <h1 class="h4 mb-2">Home</h1>
-  <p class="text-muted mb-0">Workflow screens replace this shell in Phase 5 implement.</p>
+  <section class="workspace-welcome">
+    <h1 class="h3 mb-2">Welcome to Student Accommodation</h1>
+    <p class="mb-0">Your next step toward a place that feels like home starts here.</p>
+    <a class="btn btn-primary mt-3" href="{{ url_for('search_listings') }}">Find accommodation</a>
+  </section>
 </div>
 {% endblock %}

@@ -90,6 +90,14 @@ Creates tables (drops existing by default) **and seeds demo users**:
 python manage.py init
 ```
 
+To include the listing-workflow landlord demo account:
+
+```bash
+python manage.py init --with-landlord
+```
+
+This adds `landlord` / `landlordpass`; the default student and admin demo accounts are unchanged.
+
 | Username | Password    | Role         |
 |----------|-------------|--------------|
 | `bob`    | `bobpass`   | regular_user |
@@ -100,6 +108,7 @@ Flags:
 ```bash
 python manage.py init --no-drop   # create/seed without dropping
 python manage.py init --no-seed   # tables only (skip demo users)
+python manage.py seed --with-landlord  # seed demo accounts plus landlord
 ```
 
 Seeding skips usernames that already exist. Add more rows in `cmd_seed` in `app/cli.py`. `python manage.py seed` still works if you only want to (re)insert demo users.

@@ -1,0 +1,33 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Payment{% endblock %}
+
+{% block subpage_content %}
+<div class="container-fluid py-2">
+  <section class="workspace-welcome">
+    {% for message in get_flashed_messages(request) %}
+    <div class="alert alert-{{ message.type }}" role="alert">{{ message.message }}</div>
+    {% endfor %}
+
+    <p class="landing-kicker">Complete your booking</p>
+    <h1 class="h2 mb-4">Payment</h1>
+
+    <div class="listing-card">
+      <div class="listing-card-content">
+        <h2 class="h5">{{ listing.address }}</h2>
+        <p class="mb-1"><strong>Monthly price:</strong> ${{ "%.2f"|format(listing.price) }}</p>
+        <p class="mb-1"><strong>Security fee:</strong> ${{ "%.2f"|format(listing.security_fee) }}</p>
+        <p class="mb-3"><strong>Payment total:</strong> ${{ "%.2f"|format(payment_total) }}</p>
+
+        <form method="post" action="{{ url_for('submit_booking_payment', booking_id=booking.id) }}">
+          <label class="form-label" for="payment_method">Payment method</label>
+          <input class="form-control" id="payment_method" name="payment_method" type="text" placeholder="Card or cash" required>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-primary" type="submit">Submit payment</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for('student_applications') }}">Cancel payment</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

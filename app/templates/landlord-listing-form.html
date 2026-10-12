@@ -1,0 +1,58 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Post a listing{% endblock %}
+
+{% block subpage_content %}
+<div class="container-fluid py-2">
+  <section class="workspace-welcome listing-form-panel">
+    <p class="landing-kicker">For landlords</p>
+    <h1 class="h2 mb-2">Post listing details</h1>
+    <p class="mb-4">Share the details of your space, add photos, and submit it for verification.</p>
+    <p><a href="{{ url_for('current_listings_view') }}">View current listings</a></p>
+
+    <form method="post" action="{{ url_for('create_listing') }}" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label" for="address">Address</label>
+        <input class="form-control" id="address" name="address" type="text" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="room_type">Room type</label>
+        <input class="form-control" id="room_type" name="room_type" type="text" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="amenities">Amenities</label>
+        <textarea class="form-control" id="amenities" name="amenities" rows="3" required></textarea>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-sm-6 mb-3">
+          <label class="form-label" for="price">Price</label>
+          <input class="form-control" id="price" name="price" type="text" inputmode="decimal"
+                 pattern="[0-9]+([.][0-9]+)?" autocomplete="off"
+                 onkeydown="return !['e', 'E', '+', '-'].includes(event.key)"
+                 oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*)\\./g, '$1')"
+                 required>
+        </div>
+        <div class="col-sm-6 mb-3">
+          <label class="form-label" for="security_fee">Security fee</label>
+          <input class="form-control" id="security_fee" name="security_fee" type="text" inputmode="decimal"
+                 pattern="[0-9]+([.][0-9]+)?" autocomplete="off"
+                 onkeydown="return !['e', 'E', '+', '-'].includes(event.key)"
+                 oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*)\\./g, '$1')"
+                 required>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label" for="photos">Pictures</label>
+        <input class="form-control" id="photos" name="photos" type="file"
+               accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+        <div class="form-text">Add up to 5 images. Each image must be 5 MB or smaller.</div>
+      </div>
+
+      <button class="btn btn-primary btn-lg w-100" type="submit">Submit for verification</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

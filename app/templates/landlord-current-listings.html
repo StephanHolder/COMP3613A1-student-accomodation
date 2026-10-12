@@ -1,0 +1,129 @@
+{% extends "authenticated-base.html" %}
+{% block title %}Current listings{% endblock %}
+
+{% block subpage_content %}
+<div class="container-fluid py-2">
+  <section class="workspace-welcome">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-4">
+      <div>
+        <p class="landing-kicker">For landlords</p>
+        <h1 class="h2 mb-2">Current listings</h1>
+        <p class="mb-0">Check each listing’s verification status and availability.</p>
+      </div>
+      <a class="btn btn-primary" href="{{ url_for('new_listing_view') }}">Post new listing</a>
+    </div>
+
+    <h2 class="h5 mb-3">Listings ({{ pagination.total_count }})</h2>
+
+    {% if listings %}
+    <div class="listing-card-list">
+      {% for listing in listings %}
+      <article class="listing-card">
+        <div class="listing-card-content">
+          <h3 class="h5 mb-3">{{ listing.address }}</h3>
+          <dl class="listing-card-details">
+            <div>
+              <dt>Verification status</dt>
+              <dd>
+                <span class="listing-status listing-status-{{ listing.verification_status|lower }}">
+                  {{ listing.verification_status }}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt>Availability</dt>
+              <dd>{{ "Available" if listing.availability else "Not available" }}</dd>
+            </div>
+          </dl>
+          {% if listing.verification_status == "Rejected" and listing.rejection_reason %}
+          <p class="listing-rejection-reason">
+            <strong>Reason for rejection:</strong> {{ listing.rejection_reason }}
+          </p>
+          {% endif %}
+
+          {% set listing_applications = applications_by_listing.get(listing.id, []) %}
+          {% if listing_applications %}
+          <div class="mt-4">
+            <h4 class="h6 mb-2">Applications</h4>
+            {% for application in listing_applications %}
+            <div class="border rounded p-2 mb-2">
+              {% set booking = bookings_by_application.get(application.id) %}
+              <p class="mb-1"><strong>Status:</strong> {{ booking.status if booking else application.status }}</p>
+              {% if application.student_name %}
+              <p class="mb-1"><strong>Student:</strong> {{ application.student_name }}{% if application.student_age %} ({{ application.student_age }}){% endif %}</p>
+              {% endif %}
+              {% if application.purpose_of_stay %}
+              <p class="mb-2"><strong>Purpose of stay:</strong> {{ application.purpose_of_stay }}</p>
+              {% endif %}
+
+              {% if application.status == "Applied" %}
+              <form method="post" action="{{ url_for('request_application_details', application_id=application.id) }}">
+                <button class="btn btn-outline-secondary btn-sm" type="submit">Request details</button>
+              </form>
+              {% endif %}
+
+              {% if application.status in ["Applied", "Info Requested", "Info Submitted"] %}
+              <form method="post" action="{{ url_for('decide_application', application_id=application.id) }}" class="mt-2">
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-5">
+                    <label class="form-label" for="decision-{{ application.id }}">Decision</label>
+                    <select class="form-select" id="decision-{{ application.id }}" name="decision">
+                      <option value="Accepted">Accept</option>
+                      <option value="Declined">Decline</option>
+                    </select>
+                  </div>
+                  <div class="col-md-7">
+                    <label class="form-label" for="decline-reason-{{ application.id }}">Decline reason</label>
+                    <textarea class="form-control" id="decline-reason-{{ application.id }}" name="decline_reason" rows="2" placeholder="Required if declining"></textarea>
+                  </div>
+                </div>
+                <button class="btn btn-primary btn-sm mt-2" type="submit">Submit decision</button>
+              </form>
+              {% endif %}
+
+              {% if booking and booking.status == "Notice Given" %}
+              <form method="post" action="{{ url_for('complete_booking', booking_id=booking.id) }}" class="mt-2">
+                <button class="btn btn-primary btn-sm" type="submit">Mark as completed</button>
+              </form>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        <div class="listing-card-edit-slot" aria-hidden="true"></div>
+      </article>
+      {% endfor %}
+    </div>
+
+    <nav class="listing-pagination" aria-label="Current listings pages">
+      <ul class="pagination align-items-center mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+          {% if pagination.has_prev %}
+          <a class="page-link" href="{{ url_for('current_listings_view') }}?page={{ pagination.prev_num }}" aria-label="Previous page">← Previous</a>
+          {% else %}
+          <span class="page-link" aria-disabled="true">← Previous</span>
+          {% endif %}
+        </li>
+        <li class="page-item page-label" aria-current="page">
+          <span>Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+        </li>
+        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+          {% if pagination.has_next %}
+          <a class="page-link" href="{{ url_for('current_listings_view') }}?page={{ pagination.next_num }}" aria-label="Next page">Next →</a>
+          {% else %}
+          <span class="page-link" aria-disabled="true">Next →</span>
+          {% endif %}
+        </li>
+      </ul>
+    </nav>
+    {% else %}
+    <div class="listing-empty-state">
+      <h3 class="h5">No listings yet</h3>
+      <p class="mb-3">Your submitted accommodation listings will appear here.</p>
+      <a class="btn btn-outline-secondary" href="{{ url_for('new_listing_view') }}">Post your first listing</a>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

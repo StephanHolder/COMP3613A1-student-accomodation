@@ -5,8 +5,12 @@
 <div class="auth-shell">
   <div class="auth-panel">
     <a class="auth-back" href="{{ url_for('index_view') }}">← Home</a>
-    <div class="brand-wordmark">FastStarter</div>
-    <p class="auth-tagline">Sign in to continue</p>
+    <a class="brand-lockup" href="{{ url_for('index_view') }}">
+      <img class="brand-mark" src="{{ url_for('static', path='img/brand-dog-kennel.svg') }}" alt="">
+      <span class="brand-wordmark">Student Accommodation</span>
+    </a>
+    <h1>Welcome back</h1>
+    <p class="auth-tagline">Sign in to continue your accommodation journey.</p>
 
     <form method="POST" action="{{ url_for('login_action_ajax') }}">
       <div class="mb-3">

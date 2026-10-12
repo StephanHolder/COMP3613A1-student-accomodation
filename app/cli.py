@@ -51,10 +51,11 @@ def cmd_seed(args: argparse.Namespace) -> None:
 
     bob / bobpass       (regular_user)
     admin / adminpass   (admin)
+    landlord / landlordpass (landlord, with --with-landlord)
     """
     from app.database import ensure_db_and_tables, get_cli_session
     from app.repositories.user import UserRepository
-    from app.schemas.user import AdminCreate, RegularUserCreate
+    from app.schemas.user import AdminCreate, LandlordCreate, RegularUserCreate
     from app.utilities.security import encrypt_password
 
     _ensure_models_loaded()
@@ -64,6 +65,10 @@ def cmd_seed(args: argparse.Namespace) -> None:
         ("bob", "bob@example.com", "bobpass", "regular_user"),
         ("admin", "admin@example.com", "adminpass", "admin"),
     ]
+    if getattr(args, "with_landlord", False):
+        demo_users.append(
+            ("landlord", "landlord@example.com", "landlordpass", "landlord")
+        )
 
     created = 0
     skipped = 0
@@ -74,7 +79,10 @@ def cmd_seed(args: argparse.Namespace) -> None:
                 print(f"  skip  {username} (already exists)")
                 skipped += 1
                 continue
-            payload_cls = AdminCreate if role == "admin" else RegularUserCreate
+            payload_cls = {
+                "admin": AdminCreate,
+                "landlord": LandlordCreate,
+            }.get(role, RegularUserCreate)
             repo.create(
                 payload_cls(
                     username=username,
@@ -88,6 +96,8 @@ def cmd_seed(args: argparse.Namespace) -> None:
 
     print(f"Seed done — created {created}, skipped {skipped}.")
     print("Login with bob/bobpass or admin/adminpass")
+    if getattr(args, "with_landlord", False):
+        print("Landlord demo login: landlord / landlordpass")
 
 
 def cmd_run(args: argparse.Namespace) -> None:
@@ -235,11 +245,21 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_false",
         help="Skip demo user seed after creating tables",
     )
+    p_init.add_argument(
+        "--with-landlord",
+        action="store_true",
+        help="Also seed the landlord / landlordpass demo account",
+    )
     p_init.set_defaults(drop=True, seed=True, func=cmd_init)
 
     p_seed = sub.add_parser(
         "seed",
         help="Insert demo users only (idempotent; also runs as part of init)",
+    )
+    p_seed.add_argument(
+        "--with-landlord",
+        action="store_true",
+        help="Also seed the landlord / landlordpass demo account",
     )
     p_seed.set_defaults(func=cmd_seed)
 
