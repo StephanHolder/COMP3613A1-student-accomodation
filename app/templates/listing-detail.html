@@ -50,7 +50,7 @@
       {% if reviews %}
         {% for review, reviewer in reviews %}
         <article class="border rounded p-3 mb-3">
-          <p class="mb-1"><strong>Reviewer (Login ID):</strong> {{ reviewer.login_id }}</p>
+          <p class="mb-1"><strong>Reviewer (Login ID):</strong> {{ reviewer.username }}</p>
           <p class="mb-1"><strong>Rating:</strong> {{ review.rating }} / 5</p>
           <p class="mb-1">{{ review.comment }}</p>
           <p class="text-muted mb-0"><strong>Date:</strong> {{ review.review_date }}</p>
