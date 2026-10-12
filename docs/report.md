@@ -32,7 +32,8 @@ First draft. Update this section in Phase 5 when polish revises the model, and n
 erDiagram
   User {
     int id PK
-    string login_id
+    string username
+    string email
     string role
     string password
   }
@@ -122,11 +123,11 @@ Lifecycle correction: completing a booking now also changes its linked applicati
 
 Final local verification for workflow 3: the student confirmed that a `Confirmed` booking can receive a move-out notice, the landlord can mark the resulting `Notice Given` booking as `Completed`, completion makes the listing available again, the linked application becomes `Completed`, completed applications no longer block a new application, and the student can submit a review only after completion.
 
-Public listing review polish: `listing_detail_view` now loads reviews newest first and displays the reviewer login ID (the wireframe explicitly shows “Reviewer (Login ID)”), rating, written comment, and review date. It also displays the listing's average rating and “No reviews yet” when there are no reviews.
+Public listing review polish: `listing_detail_view` now loads reviews newest first and displays the reviewer's username as the login ID (the wireframe explicitly shows “Reviewer (Login ID)”), rating, written comment, and review date. It also displays the listing's average rating and “No reviews yet” when there are no reviews.
 
 Review pagination polish: the public listing detail page now shows five reviews per page, newest first, with Previous/Next controls and a `Page X of Y` label. The average rating is calculated across every review for the listing, independent of the current page.
 
-Local verification: the student confirmed that public listing review pagination works correctly, including five reviews per page, newest-first ordering, Previous/Next navigation, page labels, and an average rating calculated across all reviews.
+Local verification: the student confirmed that public listing review pagination works correctly, including five reviews per page, newest-first ordering, Previous/Next navigation, page labels, and an average rating calculated across all reviews. The reviewer login ID is rendered from `User.username`, so both seeded reviews display `bob` and `fred`, and reviews created through the app use the same lookup.
 
 <!-- student-build:code-check
 workflow: Submit review of completed stay (Student)
@@ -238,7 +239,7 @@ One named workflow at a time. Include verify notes and polish / model revisions 
 
 ### Workflow 1 — Post listing detail for verification (Landlord)
 
-Local verification: the student reported that the post form and success message matched the wireframe, but success returned to a blank form with no status view. Submission was changed to redirect to Current Listings, showing address, verification status, and availability from the landlord’s own listings; the student confirmed these fields matched. The student then requested two listings per page, Previous/Next arrows, a page label, bordered cards, and a reserved space for a future Edit action on rejected listings. Server-side pagination returns two listings per page; the student confirmed pagination, borders, and card contents work. The Edit behavior remains deferred. The `Listing` SQLModel includes the ERD fields and a landlord foreign key; the student-completed POST route calls `ListingService` without persistence logic. Uploaded photo filenames are stored as a JSON list in the ERD's `photos` string field and files are saved under local `app/static/uploads/`. Uploads are limited to five JPEG, PNG, WebP, or GIF images of 5 MB each. Local-disk photos are not durable on ephemeral hosting and must be moved to persistent/object storage before deployment. Landlord demo accounts are opt-in via `python manage.py init --with-landlord` or `python manage.py seed --with-landlord`; login: `landlord` / `landlordpass`.
+Local verification: the student reported that the post form and success message matched the wireframe, but success returned to a blank form with no status view. Submission was changed to redirect to Current Listings, showing address, verification status, and availability from the landlord’s own listings; the student confirmed these fields matched. The student then requested two listings per page, Previous/Next arrows, a page label, bordered cards, and a reserved space for a future Edit action on rejected listings. Server-side pagination returns two listings per page; the student confirmed pagination, borders, and card contents work. Rejected listings show the rejection reason to the landlord. The landlord re-posts a rejected listing as a new submission rather than editing the rejected row; this was chosen as the clearer reattempt workflow. The `Listing` SQLModel includes the ERD fields and a landlord foreign key; the student-completed POST route calls `ListingService` without persistence logic. Uploaded photo filenames are stored as a JSON list in the ERD's `photos` string field and files are saved under local `app/static/uploads/`. Uploads are limited to five JPEG, PNG, WebP, or GIF images of 5 MB each. Local-disk photos are not durable on ephemeral hosting and must be moved to persistent/object storage before deployment. The default seed now includes the landlord account and demo data without an extra flag; login: `landlord` / `landlordpass`.
 
 <!-- student-build:code-check
 workflow: Post listing detail for verification (Landlord)
@@ -595,16 +596,30 @@ note: Completed a thin decision route that calls ListingService, flashes success
 
 Phase 6. Public Render URL (not localhost). Markers open this to mark the three workflows.
 
-https://
+https://comp3613a1-student-accomodation.onrender.com/
+
+The Render Postgres database and web service were created in the Render dashboard using the settings from `README.md`, because the Render MCP tools were not exposed to the chat.
 
 ## Logins
 
 Every account a marker needs, including extra users you added. Starter accounts:
 
-- bob / bobpass — regular user
+- bob / bobpass — student
+- fred / fredpass — student
+- landlord / landlordpass — landlord
 - admin / adminpass — admin
 
+The default seed data contains four accounts, five Verified listings, one Pending listing, two completed stays, and two reviews. The completed-stay listing remains available so students can apply.
+
 ## YouTube URL
+
+https://youtu.be/nmQLianR1UA
+
+## Repository and agents
+
+GitHub repository: https://github.com/StephanHolder/COMP3613A1-student-accomodation
+
+Agents used: GitHub Copilot Agent in VS Code and Cursor Hobby.
 
 ## Session transcripts
 
