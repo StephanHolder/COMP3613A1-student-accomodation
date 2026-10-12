@@ -24,6 +24,8 @@ Do not put your student ID in this file if you will commit it. The PDF cover add
 
 **Phase 5 model/use-case refinement.** The landlord dashboard wireframe also covers **View Current Listings**, added to the use-case diagram as a Landlord use case. The post-listing success path now leads there.
 
+**Implementation note.** **Edit listing details** was not built because rejected listings can instead be re-posted as a new listing submission.
+
 ## Model diagram
 
 First draft. Update this section in Phase 5 when polish revises the model, and note what changed.
