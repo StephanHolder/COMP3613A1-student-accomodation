@@ -13,6 +13,7 @@ from app.models.listing import Listing
 from app.models.user import User
 from app.repositories.listing import ListingRepository
 from app.utilities.pagination import Pagination
+from app.services.errors import ConflictError, ForbiddenError, NotFoundError
 
 logger = logging.getLogger(__name__)
 LANDLORD_LISTINGS_PER_PAGE = 2
@@ -102,7 +103,7 @@ class ListingService:
     def get_public_listing(self, listing_id: int) -> tuple[Listing, list[str]]:
         listing = self.listing_repo.get_by_id(listing_id)
         if listing is None or listing.verification_status != "Verified":
-            raise ValueError("This verified listing could not be found.")
+            raise NotFoundError("This verified listing could not be found.")
         return listing, self.get_listing_photo_names(listing)
 
     def get_pending_listings(
@@ -113,7 +114,7 @@ class ListingService:
         newest_first: bool = True,
     ) -> tuple[list[Listing], Pagination]:
         if admin.role != "admin":
-            raise ValueError("Only an admin can view pending listings.")
+            raise ForbiddenError("Only an admin can view pending listings.")
         if page < 1 or limit < 1:
             raise ValueError("Page and page size must be positive.")
         return self.listing_repo.get_pending_listings(
@@ -130,15 +131,15 @@ class ListingService:
         rejection_reason: str = "",
     ) -> Listing:
         if admin.role != "admin":
-            raise ValueError("Only an admin can decide a listing.")
+            raise ForbiddenError("Only an admin can decide a listing.")
         if decision not in {"approve", "reject"}:
             raise ValueError("Choose either approve or reject.")
 
         listing = self.listing_repo.get_by_id(listing_id)
         if listing is None:
-            raise ValueError("Listing not found.")
+            raise NotFoundError("Listing not found.")
         if listing.verification_status != "Pending":
-            raise ValueError("Only pending listings can be reviewed.")
+            raise ConflictError("Only pending listings can be reviewed.")
 
         if decision == "approve":
             listing.verification_status = "Verified"

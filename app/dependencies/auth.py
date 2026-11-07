@@ -14,6 +14,11 @@ async def get_current_user(request:Request, db:SessionDep)->User:
         headers={"WWW-Authenticate": "Bearer"},
     )
     token = request.cookies.get("access_token")
+    if token is None:
+        # API clients (Postman, scripts) send "Authorization: Bearer <token>".
+        scheme, _, bearer = request.headers.get("Authorization", "").partition(" ")
+        if scheme.lower() == "bearer" and bearer.strip():
+            token = bearer.strip()
 
     if token is None:
         raise credentials_exception

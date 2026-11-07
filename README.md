@@ -338,3 +338,23 @@ comp3613a1
 3. Add a migration tool such as Alembic
 4. Consider Docker for deployment
 5. Prefer secure cookie practices over casual localStorage token storage where appropriate
+
+## Running the tests
+
+From the project root, with the virtual environment active and dependencies installed:
+
+```bash
+pytest                    # all 296 tests
+pytest -m unit            # 137 unit tests: services tested in isolation with mocked repositories
+pytest -m integration     # 159 integration tests: routes + services + repositories on in-memory SQLite
+```
+
+Tests never touch `database.db` or a Postgres database. Each test gets its own in-memory database.
+
+### API tests (Postman)
+
+1. `python manage.py init` then `python manage.py run` (the app listens on http://localhost:5000).
+2. In Postman, import `postman/StudentAccommodation.postman_collection.json` and `postman/Local.postman_environment.json`, and select the **Student Accommodation - local** environment.
+3. Open the collection, choose **Run**, keep the folders in order, and run. Expected: 61 requests, 89 assertions, 0 failed.
+
+The test plans (unit, integration, API and user acceptance) are in `docs/test-plans.md`.

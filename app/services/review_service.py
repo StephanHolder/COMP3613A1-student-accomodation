@@ -3,6 +3,7 @@ from datetime import date
 from app.models.review import Review
 from app.models.user import User
 from app.repositories.review import ReviewRepository
+from app.services.errors import ConflictError, ForbiddenError, NotFoundError
 
 
 class ReviewService:
@@ -13,16 +14,16 @@ class ReviewService:
         self._require_student(student)
         booking = self.review_repo.get_booking(booking_id)
         if booking is None:
-            raise ValueError("Booking not found.")
+            raise NotFoundError("Booking not found.")
         if booking.student_id != student.id:
-            raise ValueError("You are not the student on this booking.")
+            raise ForbiddenError("You are not the student on this booking.")
         if booking.status != "Completed":
-            raise ValueError("Reviews can only be submitted for completed stays.")
+            raise ConflictError("Reviews can only be submitted for completed stays.")
         if self.review_repo.get_for_booking(booking_id) is not None:
-            raise ValueError("A review has already been submitted for this booking.")
+            raise ConflictError("A review has already been submitted for this booking.")
         listing = self.review_repo.get_listing(booking.listing_id)
         if listing is None:
-            raise ValueError("Listing not found for this booking.")
+            raise NotFoundError("Listing not found for this booking.")
         return booking, listing
 
     def get_listing_reviews(
@@ -58,4 +59,4 @@ class ReviewService:
     @staticmethod
     def _require_student(student: User) -> None:
         if student.id is None or student.role != "regular_user":
-            raise ValueError("Only a registered student can submit a review.")
+            raise ForbiddenError("Only a registered student can submit a review.")

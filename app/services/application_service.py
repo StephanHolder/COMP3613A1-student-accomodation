@@ -8,6 +8,7 @@ from app.repositories.application import ApplicationRepository
 from app.repositories.booking import BookingRepository
 from app.repositories.listing import ListingRepository
 from app.utilities.pagination import Pagination
+from app.services.errors import ConflictError, ForbiddenError, NotFoundError
 
 AGE_INPUT_PATTERN = re.compile(r"^\d+$")
 
@@ -31,22 +32,22 @@ class ApplicationService:
     ) -> Application:
         # BEGIN STUDENT SNIPPET: coordinate eligibility, duplicate, and retry rules
         if student.id is None or student.role != "regular_user":
-            raise ValueError("Only a registered student can apply.")
+            raise ForbiddenError("Only a registered student can apply.")
         listing = self.listing_repo.get_by_id(listing_id)
         if listing is None:
-            raise ValueError("Listing not found.")
+            raise NotFoundError("Listing not found.")
         if listing.verification_status != "Verified":
-            raise ValueError("This listing is not verified.")
+            raise ConflictError("This listing is not verified.")
         if not listing.availability:
-            raise ValueError("This listing is no longer available.")
+            raise ConflictError("This listing is no longer available.")
         if listing.landlord_id == student.id:
-            raise ValueError("You cannot apply to your own listing.")
+            raise ForbiddenError("You cannot apply to your own listing.")
         existing_application = self.application_repo.get_active_for_student_listing(
             student_id=student.id,
             listing_id=listing_id,
         )
         if existing_application is not None:
-            raise ValueError("You already have an active application for this listing.")
+            raise ConflictError("You already have an active application for this listing.")
         application = Application(
             preferred_start_date=preferred_start_date,
             listing_id=listing_id,
@@ -65,22 +66,31 @@ class ApplicationService:
             raise ValueError("Page and page size must be positive.")
         return self.application_repo.get_for_student(student.id, page, limit)
 
+    def get_landlord_applications(
+        self, landlord: User, page: int, limit: int
+    ) -> tuple[list[Application], Pagination]:
+        if landlord.id is None or landlord.role != "landlord":
+            raise ForbiddenError("Only a landlord can view these applications.")
+        if page < 1 or limit < 1:
+            raise ValueError("Page and page size must be positive.")
+        return self.application_repo.get_for_landlord(landlord.id, page, limit)
+
     def request_details(
         self, landlord: User, application_id: int
     ) -> Application:
         # BEGIN STUDENT SNIPPET: coordinate ownership and status for detail requests
         if landlord.id is None or landlord.role != "landlord":
-            raise ValueError("Only a landlord can request details.")
+            raise ForbiddenError("Only a landlord can request details.")
         application = self.application_repo.get_by_id(application_id)
         if application is None:
-            raise ValueError("Application not found.")
+            raise NotFoundError("Application not found.")
         listing = self.listing_repo.get_by_id(application.listing_id)
         if listing is None:
-            raise ValueError("Listing not found for this application.")
+            raise NotFoundError("Listing not found for this application.")
         if listing.landlord_id != landlord.id:
-            raise ValueError("You are not the owner of this application.") 
+            raise ForbiddenError("You are not the owner of this application.") 
         if application.status != "Applied":
-            raise ValueError("Details can only be requested for applications that are still Applied.")
+            raise ConflictError("Details can only be requested for applications that are still Applied.")
         application.status = "Info Requested"
         return self.application_repo.update(application)
         # END STUDENT SNIPPET
@@ -94,20 +104,20 @@ class ApplicationService:
     ) -> Application:
         # BEGIN STUDENT SNIPPET: coordinate landlord accept or decline behavior
         if landlord.id is None or landlord.role != "landlord":
-            raise ValueError("Only a landlord can decide on applications.") 
+            raise ForbiddenError("Only a landlord can decide on applications.") 
         if decision not in ["Accepted", "Declined"]:
             raise ValueError("Decision must be either 'Accepted' or 'Declined'.")  
         application = self.application_repo.get_by_id(application_id)
         if application is None:
-            raise ValueError("Application not found.")
+            raise NotFoundError("Application not found.")
         listing = self.listing_repo.get_by_id(application.listing_id)
         if listing is None:
-            raise ValueError("Listing not found for this application.")
+            raise NotFoundError("Listing not found for this application.")
         if listing.landlord_id != landlord.id:
-            raise ValueError("You are not the owner of this application.")
+            raise ForbiddenError("You are not the owner of this application.")
         if decision == "Declined":
             if application.status not in ["Applied", "Info Requested", "Info Submitted"]:
-                raise ValueError("Only applications that are Applied, Info Requested or Info Submitted can be declined.")
+                raise ConflictError("Only applications that are Applied, Info Requested or Info Submitted can be declined.")
             reason = decline_reason.strip()
             if not reason:
                 raise ValueError("Decline reason must be provided when declining an application.")
@@ -115,11 +125,11 @@ class ApplicationService:
             application.decline_reason = reason
             return self.application_repo.update(application)
         if application.status != "Info Submitted":
-            raise ValueError("Only applications with Info Submitted can be accepted.")
+            raise ConflictError("Only applications with Info Submitted can be accepted.")
         if not listing.availability:
-            raise ValueError("This listing is no longer available.")
+            raise ConflictError("This listing is no longer available.")
         if self.booking_repo.get_in_progress_for_listing(listing.id):
-            raise ValueError("This listing already has an active booking.")
+            raise ConflictError("This listing already has an active booking.")
         application.status = "Accepted"
         booking = Booking(
             application_id=application.id,
@@ -142,14 +152,14 @@ class ApplicationService:
     ) -> Application:
         # BEGIN STUDENT SNIPPET: validate and save the requested student details
         if student.id is None or student.role != "regular_user":
-            raise ValueError("Only a registered student can submit details.")
+            raise ForbiddenError("Only a registered student can submit details.")
         application = self.application_repo.get_by_id(application_id)
         if application is None:
-            raise ValueError("Application not found.")
+            raise NotFoundError("Application not found.")
         if application.student_id != student.id:
-            raise ValueError("You are not the owner of this application.")
+            raise ForbiddenError("You are not the owner of this application.")
         if application.status != "Info Requested":
-            raise ValueError("Details can only be submitted for applications with Info Requested.")
+            raise ConflictError("Details can only be submitted for applications with Info Requested.")
         if not student_name.strip():
             raise ValueError("Student name must be provided.")
         if not AGE_INPUT_PATTERN.fullmatch(student_age):
